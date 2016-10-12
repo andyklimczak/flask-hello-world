@@ -1,6 +1,7 @@
 import os
 from flask import Flask, url_for, request, render_template, redirect, send_from_directory, session, escape
 from werkzeug.utils import secure_filename
+from werkzeug import FileStorage
 
 UPLOAD_FOLDER = '/tmp/flask'
 ALLOWED_EXTENSIONS = set(['txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif'])
@@ -60,6 +61,33 @@ def logout():
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1] in ALLOWED_EXTENSIONS
 
+# @app.route('/uploads', methods=['GET', 'POST'])
+# def upload_file():
+    # if request.method == 'POST':
+        # if 'file' not in request.files:
+            # flash('No file part')
+            # return redirect(request.url)
+        # file = request.files['file']
+        # if file.filename == '':
+            # flash('No selected file')
+            # return redirect(request.url)
+        # if file and allowed_file(file.filename):
+            # filename = secure_filename(file.filename)
+            # file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+            # return redirect(url_for('uploaded_file', filename=filename))
+    # return '''
+    # <!doctype>
+    # <title>Upload new File</title>
+    # <h1>Upload new File</h1>
+    # <form action="" method=post enctype=multipart/form-data>
+    # <p><input type=file name=file>
+        # <input type=submit value=Upload>
+    # </form>
+    # '''
+
+def parse_file(file):
+    return file.read().decode('utf-8')
+
 @app.route('/uploads', methods=['GET', 'POST'])
 def upload_file():
     if request.method == 'POST':
@@ -71,9 +99,8 @@ def upload_file():
             flash('No selected file')
             return redirect(request.url)
         if file and allowed_file(file.filename):
-            filename = secure_filename(file.filename)
-            file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-            return redirect(url_for('uploaded_file', filename=filename))
+            session['text'] = parse_file(file)
+            return redirect(url_for('output_file'))
     return '''
     <!doctype>
     <title>Upload new File</title>
@@ -83,6 +110,10 @@ def upload_file():
         <input type=submit value=Upload>
     </form>
     '''
+
+@app.route('/uploads/done')
+def output_file():
+    return 'File contents: %s' % escape(session['text'])
 
 @app.route('/uploads/<filename>')
 def uploaded_file(filename):
